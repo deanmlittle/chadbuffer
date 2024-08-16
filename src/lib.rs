@@ -10,6 +10,9 @@ use {
     std::slice::{from_raw_parts, from_raw_parts_mut},
 };
 
+#[allow(non_camel_case_types)]
+type u24 = [u8;3];
+
 // Alignment
 pub const ALIGNMENT:        usize = 0x0008;
 pub const PUBKEY_LENGTH:    usize = 0x0020;
@@ -96,7 +99,7 @@ pub unsafe extern "C" fn entrypoint(input: *mut u8) {
         0 => {
             log::sol_log("Init");
             sol_memcpy(buffer_authority, signer, PUBKEY_LENGTH);
-            ix_data_size -= 1; // Remove 1 for the discriminator
+            ix_data_size -= size_of::<u8>(); // Remove 1 for the discriminator
             let ix_data: &[u8] = from_raw_parts(input.add(offset), ix_data_size);
             let buffer_data = from_raw_parts_mut(input.add(BUFFER_DATA), ix_data_size);
             sol_memcpy(buffer_data, ix_data, ix_data_size);
@@ -111,11 +114,11 @@ pub unsafe extern "C" fn entrypoint(input: *mut u8) {
         2 => {
             log::sol_log("Write");
             // Get the offset
-            ix_data_size -= 4; // Remove 1 for discriminator and 3 for u24 offset
+            ix_data_size -= size_of::<u32>(); // Remove 1 for discriminator and 3 for u24 offset
             let mut data_offset = *(input.add(offset) as *const u64) as usize;
             data_offset &= U24_MASK;
             data_offset += BUFFER_DATA;
-            offset += 3; // Based u24 hack?
+            offset += size_of::<u24>(); // Based u24 hack?
 
             let ix_data: &[u8] = from_raw_parts(input.add(offset), ix_data_size);
             let buffer_data = from_raw_parts_mut(input.add(data_offset), ix_data_size);
