@@ -1,5 +1,5 @@
 import Bluebird from 'bluebird';
-import { Keypair, Connection, Transaction, SendOptions, BlockhashWithExpiryBlockHeight } from "@solana/web3.js";
+import { Keypair, Connection, Transaction, SendOptions, BlockhashWithExpiryBlockHeight, ComputeBudgetProgram, SetComputeUnitPriceParams } from "@solana/web3.js";
 import { randomBytes } from "crypto";
 import { ChadBuffer } from "../lib"; // Adjust the import path accordingly
 import { sha256 } from "@noble/hashes/sha2";
@@ -57,7 +57,7 @@ describe('ChadBuffer tests', function() {
     this.timeout(120000);
     const length = 3000000;
     const data = randomBytes(length);
-    const chadbuf = new ChadBuffer(connection, data);
+    const chadbuf = new ChadBuffer(connection, data, { microLamports: 200000, units: 1000 });
     let block: BlockhashWithExpiryBlockHeight;
 
     it('Initialize a ChadBuffer', async () => {
@@ -75,7 +75,8 @@ describe('ChadBuffer tests', function() {
     });
 
     it('Close a ChadBuffer', async () => {
-        let account = await connection.getAccountInfo(chadbuf.keypair.publicKey, "confirmed");
+        await setTimeout(()=>{console.log('Wait')},3000); 
+        let account = await connection.getAccountInfo(chadbuf.keypair.publicKey, connection.commitment);
         let data = account!.data.subarray(32);
         let hash = sha256(data);
 

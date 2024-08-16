@@ -1,4 +1,4 @@
-import { Connection, Keypair, Transaction, PublicKey, TransactionInstruction, TransactionInstructionCtorFields, TransactionBlockhashCtor, SendOptions, BlockhashWithExpiryBlockHeight, AccountMeta, SystemProgram, CreateAccountParams } from "@solana/web3.js";
+import { Connection, Keypair, Transaction, PublicKey, TransactionInstruction, TransactionInstructionCtorFields, TransactionBlockhashCtor, SendOptions, BlockhashWithExpiryBlockHeight, AccountMeta, SystemProgram, CreateAccountParams, ComputeBudgetProgram, SetComputeUnitPriceParams, SetComputeUnitLimitParams } from "@solana/web3.js";
 import { sha256 } from "@noble/hashes/sha2";
 import { BN } from "bn.js";
 
@@ -15,16 +15,30 @@ export class ChadBuffer {
     keypair: Keypair;
     size: number;
     shards: Buffer[] = [];
+    DYNAMIC_IX_SIZE = 0;
+    preInstructions: TransactionInstruction[] = [];
 
     static INIT_DATA_SIZE = 358;
     static WRITE_DATA_SIZE = 208;
     static TX_SIZE = 1232;
 
-    constructor(public connection: Connection, public data: Buffer, keypair?: Keypair) {
+    constructor(public connection: Connection, public data: Buffer, computeUnits?: { microLamports?: number | bigint, units?: number }, keypair?: Keypair) {
         this.checksum = sha256(data);
         this.keypair = keypair || new Keypair();
         this.size = data.length + 32;
+        if (computeUnits?.microLamports || computeUnits?.units) {
+            this.DYNAMIC_IX_SIZE += 36;
+        }
+        if (computeUnits?.microLamports) {
+            this.preInstructions.push(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: computeUnits.microLamports }));
+            this.DYNAMIC_IX_SIZE += 8;
+        }
+        if (computeUnits?.units) {
+            this.preInstructions.push(ComputeBudgetProgram.setComputeUnitLimit({ units: computeUnits.units }));
+            this.DYNAMIC_IX_SIZE += 8;
+        }
         this.shards = this.createShards(data);
+
     }
 
     createShards(data: Buffer): Buffer[] {
@@ -32,16 +46,16 @@ export class ChadBuffer {
         let shards: Buffer[] = [];
 
         // Allocate the first shard
-        const initSize = Math.min(ChadBuffer.TX_SIZE - ChadBuffer.INIT_DATA_SIZE, data.length);
+        const initSize = Math.min(ChadBuffer.TX_SIZE - this.DYNAMIC_IX_SIZE - ChadBuffer.INIT_DATA_SIZE, data.length);
         shards.push(
             Buffer.concat([
-                data.subarray(0, Math.min(ChadBuffer.TX_SIZE - ChadBuffer.INIT_DATA_SIZE, data.length))
+                data.subarray(0, Math.min(ChadBuffer.TX_SIZE - this.DYNAMIC_IX_SIZE - ChadBuffer.INIT_DATA_SIZE, data.length))
             ])
         );
         offset += initSize;
 
         while (offset < data.length) {
-            const shardData = data.subarray(offset, offset + Math.min(ChadBuffer.TX_SIZE - ChadBuffer.WRITE_DATA_SIZE, data.length));
+            const shardData = data.subarray(offset, offset + Math.min(ChadBuffer.TX_SIZE - this.DYNAMIC_IX_SIZE - ChadBuffer.WRITE_DATA_SIZE, data.length));
             shards.push(
                 Buffer.concat([
                     new BN(offset).toArrayLike(Buffer, 'le', 3), 
@@ -145,6 +159,10 @@ export class ChadBuffer {
             feePayer: authority,
         } as TransactionBlockhashCtor);
 
+        if (this.preInstructions) {
+            tx.add(...this.preInstructions)
+        }
+
         tx.add(
             SystemProgram.createAccount({
                 fromPubkey: authority,
@@ -165,6 +183,11 @@ export class ChadBuffer {
             let tx = new Transaction({
                 feePayer: authority,
             } as TransactionBlockhashCtor);
+
+            if (this.preInstructions) {
+                tx.add(...this.preInstructions)
+            }
+            
             tx.add(this.createAssignInstruction(authority, newAuthority))
             return tx
         })
@@ -176,6 +199,11 @@ export class ChadBuffer {
                 let tx = new Transaction({
                     feePayer: authority,
                 } as TransactionBlockhashCtor);
+
+                if (this.preInstructions) {
+                    tx.add(...this.preInstructions)
+                }
+                
                 tx.add(this.createWriteInstruction(authority, data))
                 return tx
             }
@@ -186,6 +214,10 @@ export class ChadBuffer {
         let tx = new Transaction({
             feePayer: authority,
         } as TransactionBlockhashCtor);
+
+        if (this.preInstructions) {
+            tx.add(...this.preInstructions)
+        }
 
         tx.add(this.createCloseInstruction(authority));
 

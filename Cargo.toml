@@ -1,8 +1,8 @@
 [package]
-name = "chad-buffer"
+name = "chadbuffer"
 version = "0.1.0"
 edition = "2021"
-description = "Heavily optimized parallel data buffers to put data onchain fast af"
+description = "Parallel data buffers for chads who want to put data onchain fast af"
 license = "MIT"
 authors = ["Dean Little <@deanmlittle>"]
 
