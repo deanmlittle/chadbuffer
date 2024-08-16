@@ -1,0 +1,15 @@
+[package]
+name = "chad-buffer"
+version = "0.1.0"
+edition = "2021"
+description = "Heavily optimized parallel data buffers to put data onchain fast af"
+license = "MIT"
+authors = ["Dean Little <@deanmlittle>"]
+
+[lib]
+name = "chad_buffer"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+solana-program = "1.18.22"
+sbpf-asm-macros = "0.1.1"

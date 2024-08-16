@@ -1,0 +1,29 @@
+{
+    "name": "chad-buffer",
+    "version": "1.0.0",
+    "main": "index.js",
+    "author": "Dean 利迪恩 <@deanmlittle>",
+    "license": "MIT",
+    "scripts": {
+        "build": "cargo-build-sbf",
+        "deploy": "solana program deploy ./target/deploy/chad_buffer.so --program-id ./target/deploy/chad_buffer-keypair.json -u localhost",
+        "test": "export SIGNER=$(cat ~/.config/solana/id.json) && mocha --import=tsx tests/test.ts",
+        "e2e": "yarn build && yarn deploy && yarn test",
+        "close": "solana program close --buffers --authority ./target/deploy/chad_buffer-keypair.json -u localhost"
+    },
+    "dependencies": {
+        "@solana/web3.js": "^1.91.8",
+        "bluebird": "^3.7.2"
+    },
+    "devDependencies": {
+        "@noble/hashes": "^1.4.0",
+        "@types/bn.js": "^5.1.5",
+        "@types/chai": "^4.3.16",
+        "@types/mocha": "^10.0.6",
+        "@types/node": "^22.3.0",
+        "bn.js": "^5.2.1",
+        "chai": "^5.1.1",
+        "mocha": "^10.4.0",
+        "tsx": "^4.11.0"
+    }
+}
