@@ -193,8 +193,9 @@ export class ChadBuffer {
         })
     }
 
-    createWriteTransactions(authority: PublicKey): Transaction[] {
-        return this.shards.slice(1).map(
+    createWriteTransactions(authority: PublicKey, shards?: Buffer[]): Transaction[] {
+        shards = shards || this.shards.slice(1);
+        return shards.map(
             (data: Buffer) => {
                 let tx = new Transaction({
                     feePayer: authority,

@@ -1,10 +1,11 @@
-import Bluebird from 'bluebird';
-import { Keypair, Connection, Transaction, SendOptions, BlockhashWithExpiryBlockHeight, ComputeBudgetProgram, SetComputeUnitPriceParams } from "@solana/web3.js";
-import { randomBytes } from "crypto";
-import { ChadBuffer } from "../lib"; // Adjust the import path accordingly
-import { sha256 } from "@noble/hashes/sha2";
+import Bluebird from 'bluebird'
+import { Keypair, Connection, Transaction, SendOptions, BlockhashWithExpiryBlockHeight, ComputeBudgetProgram, SetComputeUnitPriceParams } from "@solana/web3.js"
+import { randomBytes } from "crypto"
+import { ChadBuffer } from "../sdk/ts"
+import { BN } from "bn.js"
+import { sha256 } from "@noble/hashes/sha2"
 
-const connection = new Connection("http://127.0.0.1:8899", "confirmed")
+const connection = new Connection("http://127.0.0.1:8899", "processed")
 const signer = Keypair.fromSecretKey(new Uint8Array(JSON.parse(process.env.SIGNER!)))
 
 const confirm = async (signature: string): Promise<string> => {
@@ -29,26 +30,50 @@ const signAndSendWithBlockhash = async(tx: Transaction, signers: Keypair[], opti
     return signature;
 };
 
-const batchProcess = async (txs: Transaction[], signer: Keypair, batchSize = 20, block?: BlockhashWithExpiryBlockHeight) => {
-    let counter = 1;
+const batchProcess = async (chadbuf: ChadBuffer, signer: Keypair, batchSize = 20, block?: BlockhashWithExpiryBlockHeight) => {
+    let counter = 1
+    let txs = chadbuf.createWriteTransactions(signer.publicKey)
 
-    await Bluebird.map(
-        txs,
-        async (tx: Transaction) => {
-            try {
-                await signAndSendWithBlockhash(tx, [signer], { maxRetries: 20, skipPreflight: true }, block)
-                    .then(confirm)
-                    .then(() => {
-                        counter++;
-                        console.log(`${counter}/${txs.length+1} Confirmed`);
-                    });
-            } catch (error) {
-                console.error("Error processing transaction:", error);
-                throw error;  // Optional: Decide if you want to stop processing on error or continue
-            }
-        },
-        { concurrency: batchSize }
-    );
+    const broadcastAndConfirm = async (txs: Transaction[], signer: Keypair, batchSize: number, block?: BlockhashWithExpiryBlockHeight) => {
+        block = block || await connection.getLatestBlockhash();
+        await Bluebird.map(
+            txs,
+            async (tx: Transaction) => {
+                try {
+                    await signAndSendWithBlockhash(tx, [signer], { skipPreflight: true }, block)
+                        .then(() => {
+                            counter++;
+                            console.log(`${counter}/${txs.length+1} Confirmed`);
+                        });
+                } catch (error) {
+                    console.error("Error processing transaction:", error);
+                    throw error;  // Optional: Decide if you want to stop processing on error or continue
+                }
+            },
+            { concurrency: batchSize }
+        );
+
+        // Verify end state
+        console.log("Validating state")
+        const account = await connection.getAccountInfo(chadbuf.keypair.publicKey);
+        const accountData = account!.data!.slice(32)
+        txs = txs.filter((tx) => {
+            const shard = tx.instructions[tx.instructions.length-1].data;
+            const offset = new BN(shard.subarray(1,4), undefined, "le").toNumber();
+            const data = shard.subarray(4);
+            return Buffer.compare(accountData.subarray(offset, offset+data.length), data) != 0
+        })
+
+        if (txs.length > 0) {
+            // Don't include block as we want it to update
+            console.log(`Self-healing ${txs.length} transactions`)
+            counter = 0;
+            await broadcastAndConfirm(txs, signer, batchSize)
+        }
+    }
+
+    // Broadcast all write TXs
+    await broadcastAndConfirm(txs, signer, batchSize, block);
 
     console.log("All transactions confirmed");
 };
@@ -70,8 +95,7 @@ describe('ChadBuffer tests', function() {
     });
 
     it('Batch write ChadBuffer data', async () => {
-        const txs = chadbuf.createWriteTransactions(signer.publicKey);
-        await batchProcess(txs, signer, 100, block);
+        await batchProcess(chadbuf, signer, 100, block);
     });
 
     it('Close a ChadBuffer', async () => {
