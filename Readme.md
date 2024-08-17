@@ -1,9 +1,8 @@
 # chadbuffer
 
-Ever find yourself needing to put a lot of data onchain really fast but don't feel like doing the work to optimize it? Use a chadbuffer!
+Ever have to work on multisigs or cross-chain communications and find yourself having to put a lot of data onchain really fast but you're not really happy with existing solutions and don't feel like doing the work to optimize it? Use a chadbuffer!
 
-
-Chadbuffer is a Solana program that allows you to manage and manipulate permissioned data buffers on the Solana blockchain with parallel broadcast, optimal instruction size, self-healing state and priority fee support. It is also written in highly-performant Rust with inline assembly macros and weighs in at a mere 2.7kb in size!
+Chadbuffer is a Solana program that allows you to manage and manipulate permissioned data buffers on the Solana blockchain with _parallel broadcast, optimal instruction size, self-healing state and priority fee support_. It is also written in highly-performant Rust with inline assembly macros and weighs in at a mere 2.7kb in size!
 
 ![chadbuffer](chad.png)
 
