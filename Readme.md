@@ -1,6 +1,11 @@
-# chadBuffer
+# chadbuffer
 
-ChadBuffer is a Solana program that allows you to manage and manipulate permissioned data buffers on the Solana blockchain in parallel. The program provides instructions to initialize a buffer, write data to the buffer at an offset, assign ownership to another address, and close the buffer. This is useful for applications that require storing and managing large amounts of data across multiple transactions.
+Ever find yourself needing to put a lot of data onchain really fast but don't feel like doing the work to optimize it? Use a chadbuffer!
+
+
+Chadbuffer is a Solana program that allows you to manage and manipulate permissioned data buffers on the Solana blockchain with parallel broadcast, optimal instruction size, self-healing state and priority fee support. It is also written in highly-performant Rust with inline assembly macros and weighs in at a mere 2.7kb in size!
+
+![chadbuffer](chad.png)
 
 ## Features
 
@@ -11,7 +16,7 @@ ChadBuffer is a Solana program that allows you to manage and manipulate permissi
 
 ## Installation
 
-To use ChadBuffer, you'll need to have the following installed:
+To use `chadbuffer`, you'll need to have the following installed:
 
 - [Node.js](https://nodejs.org/)
 - [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools)
@@ -102,7 +107,7 @@ closeBuffer().catch(console.error);
 
 ## Testing
 
-The ChadBuffer program includes a suite of tests to ensure the correctness of the buffer operations. To run the tests:
+The `chadbuffer` program includes a suite of tests to ensure the correctness of the buffer operations. To run the tests:
 
 ```bash
 yarn test
@@ -123,7 +128,7 @@ If you run into issues, check the console output for detailed error messages. Yo
 
 ## Contributing
 
-Contributions to ChadBuffer are welcome! If you have any ideas for improvements or have found bugs, feel free to open an issue or submit a pull request.
+Contributions to `chadbuffer` are welcome! If you have any ideas for improvements or have found bugs, feel free to open an issue or submit a pull request.
 
 ## License
 
