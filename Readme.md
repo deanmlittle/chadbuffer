@@ -1,6 +1,6 @@
 # chadbuffer
 
-Ever find yourself having to put a lot of data onchain really fast but you're not really happy with existing solutions and don't feel like doing the work to optimize it? Use a chadbuffer!
+Ever find yourself having to put a lot of data onchain really fast? Use a chadbuffer!
 
 ![chadbuffer](chad.png)
 
