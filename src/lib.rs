@@ -5,11 +5,11 @@ use core::{
     slice::{from_raw_parts, from_raw_parts_mut},
 };
 
-use sbpf_asm_macros::set_return_imm;
-use solana_program::{
+use pinocchio::{
     log,
-    program_memory::{sol_memcmp, sol_memcpy},
+    memory::{sol_memcmp, sol_memcpy},
 };
+use sbpf_asm_macros::set_return_imm;
 
 #[allow(non_camel_case_types)]
 type u24 = [u8; 3];
